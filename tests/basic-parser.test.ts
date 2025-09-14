@@ -1,3 +1,8 @@
+/**
+ * Generated with assistance from Github Copilot (Claude Sonnet 4 (LLM), 2025-09-14).
+ * Prompt: See README.md or visit https://drive.google.com/file/d/1qhuu-I-EAj4rTmUrJpwg29lCwNYXSZ3F/view?usp=sharing
+ */
+
 import { parseCSV } from "../src/basic-parser";
 import * as path from "path";
 import * as fs from "fs";

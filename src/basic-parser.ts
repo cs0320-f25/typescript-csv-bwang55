@@ -1,3 +1,8 @@
+/**
+ * Generated with assistance from Claude Sonnet 4 (LLM), 2025-09-14.
+ * Prompt: See README.md
+ */
+
 import * as fs from "fs";
 import * as readline from "readline";
 import { ZodType } from "zod";

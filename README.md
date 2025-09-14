@@ -119,7 +119,12 @@ const stringData = {
 
 #### Collaborators (cslogins of anyone you worked with on this project and/or generative AI):
 - Github Copilot (Claude Sonnet 4, Agent mode, student access)
+- https://drive.google.com/file/d/1qhuu-I-EAj4rTmUrJpwg29lCwNYXSZ3F/view?usp=sharing
 - Claude Sonnet 4 (Extended Thinking, website)
+- https://claude.ai/share/e8d7d48d-e884-49fa-ae35-4c29b8ea9ad0
+- https://claude.ai/share/3fe14f62-45aa-48d0-b6d5-4d0147756291
+- https://claude.ai/share/9ce2f2ba-43e6-4cd5-9a02-161103921ccc
+- https://claude.ai/share/a0dbbb3c-d12c-4885-b345-bef4bafdf162
 #### Total estimated time it took to complete project: 
 - Around 10 hours, include reading all the documents, learning typescript, writing code, writing test, and writing readme. I have to catch up with all the stuff before I joined the class so it took me longer than expected.
 #### Link to GitHub Repo:  
