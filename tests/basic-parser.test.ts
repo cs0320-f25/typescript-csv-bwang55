@@ -412,3 +412,322 @@ test("parseCSV handles CSV with only headers", async () => {
     await cleanupTempFile(tempPath);
   }
 });
+
+// Schema validation tests using Zod
+
+import { z } from "zod";
+
+/**
+ * Test: Basic schema validation with string array
+ * Purpose: Tests Zod schema parsing with simple string tuple validation
+ * Input: CSV with name,age data validated against string tuple schema
+ * Expected Output: Array of validated tuples matching schema structure
+ * Schema: Validates each row as [string, string] tuple
+ */
+test("parseCSV with basic string tuple schema", async () => {
+  const csvContent = `Alice,23
+Bob,30
+Charlie,25`;
+  
+  const schema = z.tuple([z.string(), z.string()]);
+  const tempPath = await createTempCSV(csvContent);
+  
+  try {
+    const results = await parseCSV(tempPath, schema);
+    
+    expect(results).toHaveLength(3);
+    expect(results[0]).toEqual(["Alice", "23"]);
+    expect(results[1]).toEqual(["Bob", "30"]);
+    expect(results[2]).toEqual(["Charlie", "25"]);
+  } finally {
+    await cleanupTempFile(tempPath);
+  }
+});
+
+/**
+ * Test: Schema validation with type coercion
+ * Purpose: Tests Zod schema with automatic type conversion (string to number)
+ * Input: CSV with numeric age values as strings
+ * Expected Output: Array where age values are converted to numbers
+ * Schema: Validates name as string, age as coerced number - handles header as strings
+ */
+test("parseCSV with type coercion schema", async () => {
+  const csvContent = `Alice,23
+Bob,30
+Charlie,25`;
+  
+  const schema = z.tuple([z.string(), z.coerce.number()]);
+  const tempPath = await createTempCSV(csvContent);
+  
+  try {
+    const results = await parseCSV(tempPath, schema);
+    
+    expect(results).toHaveLength(3);
+    expect(results[0]).toEqual(["Alice", 23]);   // Age converted to number
+    expect(results[1]).toEqual(["Bob", 30]);
+    expect(results[2]).toEqual(["Charlie", 25]);
+  } finally {
+    await cleanupTempFile(tempPath);
+  }
+});
+
+/**
+ * Test: Schema validation failure handling
+ * Purpose: Tests error handling when CSV data doesn't match schema requirements
+ * Input: CSV with invalid age value that can't be coerced to number
+ * Expected Output: Should throw descriptive error with row information
+ * Schema: Requires second field to be a valid number
+ */
+test("parseCSV schema validation failure with descriptive error", async () => {
+  const csvContent = `Alice,23
+Bob,not-a-number
+Charlie,25`;
+  
+  const schema = z.tuple([z.string(), z.coerce.number()]);
+  const tempPath = await createTempCSV(csvContent);
+  
+  try {
+    await expect(parseCSV(tempPath, schema)).rejects.toThrow(/CSV validation failed at row 2/);
+    await expect(parseCSV(tempPath, schema)).rejects.toThrow(/Bob.*not-a-number/);
+  } finally {
+    await cleanupTempFile(tempPath);
+  }
+});
+
+/**
+ * Test: Complex schema with multiple data types
+ * Purpose: Tests schema with string, number, boolean, and optional fields
+ * Input: CSV with mixed data types including boolean values
+ * Expected Output: Array with properly typed and transformed values
+ * Schema: Complex tuple with various Zod transformations
+ */
+test("parseCSV with complex multi-type schema", async () => {
+  const csvContent = `Alice,23,true,50000
+Bob,30,false,75000
+Charlie,25,true,60000`;
+  
+  const schema = z.tuple([
+    z.string(),
+    z.coerce.number(),
+    z.string().transform(val => val.toLowerCase() === 'true'),
+    z.coerce.number()
+  ]);
+  const tempPath = await createTempCSV(csvContent);
+  
+  try {
+    const results = await parseCSV(tempPath, schema);
+    
+    expect(results).toHaveLength(3);
+    expect(results[0]).toEqual(["Alice", 23, true, 50000]);          // Boolean true, numbers converted
+    expect(results[1]).toEqual(["Bob", 30, false, 75000]);           // Boolean false
+    expect(results[2]).toEqual(["Charlie", 25, true, 60000]);        // All types properly converted
+  } finally {
+    await cleanupTempFile(tempPath);
+  }
+});
+
+/**
+ * Test: Schema validation with optional fields
+ * Purpose: Tests handling of variable-length rows with optional schema fields
+ * Input: CSV with some rows missing trailing fields
+ * Expected Output: Schema should handle missing fields gracefully
+ * Schema: Tuple with optional trailing elements
+ */
+test("parseCSV with optional fields in schema", async () => {
+  const csvContent = `Alice,23,Boston
+Bob,30
+Charlie,25,Chicago`;
+  
+  const schema = z.tuple([z.string(), z.coerce.number()]).rest(z.string());
+  const tempPath = await createTempCSV(csvContent);
+  
+  try {
+    const results = await parseCSV(tempPath, schema);
+    
+    expect(results).toHaveLength(3);
+    expect(results[0]).toEqual(["Alice", 23, "Boston"]);    // Full row
+    expect(results[1]).toEqual(["Bob", 30]);                // Missing city
+    expect(results[2]).toEqual(["Charlie", 25, "Chicago"]); // Full row
+  } finally {
+    await cleanupTempFile(tempPath);
+  }
+});
+
+/**
+ * Test: Schema validation with custom transformations
+ * Purpose: Tests Zod schema with custom data transformations and validation
+ * Input: CSV with email addresses and dates that need custom processing
+ * Expected Output: Transformed data according to custom schema rules
+ * Schema: Custom email validation and date parsing
+ */
+test("parseCSV with custom transformation schema", async () => {
+  const csvContent = `Alice,alice@example.com,2023-01-15
+Bob,bob@test.org,2022-12-01
+Charlie,charlie@demo.net,2024-03-10`;
+  
+  const schema = z.tuple([
+    z.string().min(1),
+    z.string().email(),
+    z.string().transform(dateStr => new Date(dateStr))
+  ]);
+  const tempPath = await createTempCSV(csvContent);
+  
+  try {
+    const results = await parseCSV(tempPath, schema);
+    
+    expect(results).toHaveLength(3);
+    expect(results[0]).toEqual(["Alice", "alice@example.com", new Date("2023-01-15")]);
+    expect(results[1]).toEqual(["Bob", "bob@test.org", new Date("2022-12-01")]);
+    expect(results[2]).toEqual(["Charlie", "charlie@demo.net", new Date("2024-03-10")]);
+  } finally {
+    await cleanupTempFile(tempPath);
+  }
+});
+
+/**
+ * Test: Schema validation failure with invalid email
+ * Purpose: Tests schema validation failure with descriptive error for invalid email
+ * Input: CSV with invalid email format
+ * Expected Output: Should throw error indicating email validation failure
+ * Schema: Email validation that should catch invalid formats
+ */
+test("parseCSV schema validation fails on invalid email", async () => {
+  const csvContent = `Alice,alice@example.com
+Bob,invalid-email-format
+Charlie,charlie@demo.net`;
+  
+  const schema = z.tuple([z.string(), z.string().email()]);
+  const tempPath = await createTempCSV(csvContent);
+  
+  try {
+    await expect(parseCSV(tempPath, schema)).rejects.toThrow(/CSV validation failed at row 2/);
+    await expect(parseCSV(tempPath, schema)).rejects.toThrow(/invalid-email-format/);
+  } finally {
+    await cleanupTempFile(tempPath);
+  }
+});
+
+/**
+ * Test: Schema validation with enum values
+ * Purpose: Tests schema validation using Zod enum for restricted value sets
+ * Input: CSV with status field that should match predefined enum values
+ * Expected Output: Array with validated enum values
+ * Schema: Enum validation for status field
+ */
+test("parseCSV with enum value validation", async () => {
+  const csvContent = `Alice,active,high
+Bob,inactive,medium
+Charlie,pending,low`;
+  
+  const statusEnum = z.enum(["active", "inactive", "pending"]);
+  const priorityEnum = z.enum(["low", "medium", "high"]);
+  const schema = z.tuple([z.string(), statusEnum, priorityEnum]);
+  const tempPath = await createTempCSV(csvContent);
+  
+  try {
+    const results = await parseCSV(tempPath, schema);
+    
+    expect(results).toHaveLength(3);
+    expect(results[0]).toEqual(["Alice", "active", "high"]);
+    expect(results[1]).toEqual(["Bob", "inactive", "medium"]);
+    expect(results[2]).toEqual(["Charlie", "pending", "low"]);
+  } finally {
+    await cleanupTempFile(tempPath);
+  }
+});
+
+/**
+ * Test: Schema validation failure with invalid enum value
+ * Purpose: Tests error handling when CSV contains values not in enum
+ * Input: CSV with status value not in predefined enum
+ * Expected Output: Should throw error indicating invalid enum value
+ * Schema: Enum validation that should reject invalid values
+ */
+test("parseCSV schema validation fails on invalid enum value", async () => {
+  const csvContent = `Alice,active
+Bob,invalid-status
+Charlie,pending`;
+  
+  const schema = z.tuple([z.string(), z.enum(["active", "inactive", "pending"])]);
+  const tempPath = await createTempCSV(csvContent);
+  
+  try {
+    await expect(parseCSV(tempPath, schema)).rejects.toThrow(/CSV validation failed at row 2/);
+    await expect(parseCSV(tempPath, schema)).rejects.toThrow(/invalid-status/);
+  } finally {
+    await cleanupTempFile(tempPath);
+  }
+});
+
+/**
+ * Test: Schema validation with array length mismatch
+ * Purpose: Tests error handling when CSV row has wrong number of fields for schema
+ * Input: CSV with rows that have too few fields for the schema
+ * Expected Output: Should throw error indicating array length mismatch
+ * Schema: Fixed-length tuple that requires exact field count
+ */
+test("parseCSV schema validation fails on field count mismatch", async () => {
+  const csvContent = `Alice,23,Boston
+Bob,30
+Charlie,25,Chicago,ExtraField`;
+  
+  const schema = z.tuple([z.string(), z.coerce.number(), z.string()]); // Expects exactly 3 fields
+  const tempPath = await createTempCSV(csvContent);
+  
+  try {
+    // Should fail on row with too few fields
+    await expect(parseCSV(tempPath, schema)).rejects.toThrow(/CSV validation failed at row 2/);
+  } finally {
+    await cleanupTempFile(tempPath);
+  }
+});
+
+/**
+ * Test: Schema validation with empty file
+ * Purpose: Tests schema parsing behavior with empty input file
+ * Input: Empty CSV file
+ * Expected Output: Should return empty array without errors
+ * Schema: Any valid schema should handle empty input gracefully
+ */
+test("parseCSV with schema handles empty file", async () => {
+  const csvContent = ``;
+  const schema = z.tuple([z.string(), z.coerce.number()]);
+  const tempPath = await createTempCSV(csvContent);
+  
+  try {
+    const results = await parseCSV(tempPath, schema);
+    expect(results).toEqual([]);
+  } finally {
+    await cleanupTempFile(tempPath);
+  }
+});
+
+/**
+ * Test: Schema vs non-schema behavior comparison
+ * Purpose: Verifies that schema and non-schema parsing return different types
+ * Input: Same CSV file parsed with and without schema
+ * Expected Output: Schema version should have transformed data, non-schema should have strings
+ * Schema: Type coercion schema vs no schema
+ */
+test("parseCSV schema vs non-schema behavior comparison", async () => {
+  const csvContent = `Alice,23
+Bob,30`;
+  
+  const schema = z.tuple([z.string(), z.coerce.number()]);
+  const tempPath = await createTempCSV(csvContent);
+  
+  try {
+    const withoutSchema = await parseCSV(tempPath);
+    const withSchema = await parseCSV(tempPath, schema);
+    
+    // Without schema - all strings
+    expect(withoutSchema[0]).toEqual(["Alice", "23"]);
+    expect(typeof withoutSchema[0][1]).toBe("string");
+    
+    // With schema - age converted to number
+    expect(withSchema[0]).toEqual(["Alice", 23]);
+    expect(typeof withSchema[0][1]).toBe("number");
+  } finally {
+    await cleanupTempFile(tempPath);
+  }
+});
