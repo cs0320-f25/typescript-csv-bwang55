@@ -116,7 +116,7 @@ const jsonLinkedList = {
 
 #### Collaborators (cslogins of anyone you worked with on this project and/or generative AI):
 - * Github Copilot (Claude Sonnet 4, Agent mode, student access)
-- https://drive.google.com/file/d/1qhuu-I-EAj4rTmUrJpwg29lCwNYXSZ3F/view?usp=sharing
+- https://drive.google.com/file/d/1WFdg1q-r6WFonyBU4bocU8GpUQ4jJ9E6/view?usp=sharing
 - There are also some word-level inline suggestions (not many) and grammar/spelling suggestions from copilot, I accepted some of them.
 
 - * Claude Sonnet 4 (website, This model is available to free user) 
