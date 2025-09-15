@@ -1,6 +1,13 @@
 /**
- * Generated with assistance from Github Copilot (Claude Sonnet 4 (LLM), 2025-09-14).
- * Prompt: See README.md or visit https://drive.google.com/file/d/1qhuu-I-EAj4rTmUrJpwg29lCwNYXSZ3F/view?usp=sharing
+ * These test are written by github copilot Claude4 Sonnet.
+ * I first just let the copilot to generate the tests for three constrians listed
+ * in the appendix. Then I manually check the code and run the tests. But at first
+ * all the tests passed, which it should not since the parser is pretty naive.
+ * So I updated the prompt to add tests that would fail as intended.
+ * Then, I let the copilot to generate more tests for the CSV standard and 
+ * schema validation. And let it comment the code as well.
+ * I manually checked the code and fixed some minor issues. make sure every tests
+ * are correct and meaningful. There should be 6 test failed as intended.
  */
 
 import { parseCSV } from "../src/basic-parser";
